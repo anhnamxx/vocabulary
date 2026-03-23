@@ -154,10 +154,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const vocabData = {{ vocabulary | safe }};
-const allWords = Object.values(vocabData).flat();
 let currentQuestionIndex = 0;
 let score = 0;
 let answered = false;
+let currentQuizWords = [];
 
 // ==================== FLASHCARD ====================
 let currentTest = null;
@@ -254,6 +254,21 @@ function flipCard() {
 
 // ==================== QUIZ ====================
 function startQuiz() {
+    // Chỉ lấy các từ đã học
+    currentQuizWords = [];
+    Object.keys(learnedWords).forEach(testName => {
+        const indices = learnedWords[testName] || [];
+        const words = vocabData[testName] || [];
+        indices.forEach(i => {
+            if (words[i]) currentQuizWords.push(words[i]);
+        });
+    });
+
+    if (currentQuizWords.length < 4) {
+        alert('Bạn cần học ít nhất 4 từ trước khi làm bài kiểm tra!');
+        return;
+    }
+
     score = 0;
     currentQuestionIndex = 0;
     document.getElementById('quiz-area').classList.remove('d-none');
@@ -270,14 +285,14 @@ function nextQuestion() {
     answered = false;
     document.getElementById('next-btn').style.display = 'none';
 
-    const q = allWords[Math.floor(Math.random() * allWords.length)];
+    const q = currentQuizWords[Math.floor(Math.random() * currentQuizWords.length)];
     document.getElementById('quiz-english').textContent = q.english;
     document.getElementById('question').querySelector('strong').textContent = q.english;
 
     // Tạo 4 đáp án...
     let options = [q.vietnamese];
     while (options.length < 4) {
-        const wrong = allWords[Math.floor(Math.random() * allWords.length)].vietnamese;
+        const wrong = currentQuizWords[Math.floor(Math.random() * currentQuizWords.length)].vietnamese;
         if (!options.includes(wrong)) options.push(wrong);
     }
     options = options.sort(() => Math.random() - 0.5);

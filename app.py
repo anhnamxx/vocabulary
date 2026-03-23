@@ -97,7 +97,7 @@ vocabulary = {
   {"english":"power failure","vietnamese":"mất điện","explanation":"Sự cố điện bị ngắt."},
   {"english":"property","vietnamese":"tài sản","explanation":"Vật sở hữu có giá trị."},
   {"english":"strategy","vietnamese":"chiến lược","explanation":"Kế hoạch dài hạn."},
-  {"english":"name","vietnamese":"bổ nhiệm","explanation":"Chỉ định vào vị trí."},
+  {"english":"name","vietnamese":"bổ nhiệm, chỉ định/tên gọi","explanation":"Chỉ định vào vị trí."},
   {"english":"warranty","vietnamese":"bảo hành","explanation":"Cam kết sửa chữa."},
   {"english":"workplace","vietnamese":"nơi làm việc","explanation":"Địa điểm làm việc."},
   {"english":"postpone","vietnamese":"trì hoãn","explanation":"Dời lại thời gian."},
