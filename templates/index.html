@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vocab Master - Học Từ Vựng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { background: #f8f9fa; }
+        .tab-content { margin-top: 20px; }
+        
+        /* Flashcard */
+        .flashcard {
+            perspective: 1000px;
+            width: 100%;
+            max-width: 500px;
+            height: 300px;
+            margin: 30px auto;
+        }
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border-radius: 15px;
+        }
+        .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+        
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        .flashcard-front {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .flashcard-back {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+            transform: rotateY(180deg);
+            flex-direction: column;
+        }
+        .explanation { font-size: 1.1rem; margin-top: 15px; opacity: 0.9; }
+
+        /* Quiz */
+        .option {
+            transition: all 0.3s;
+        }
+        .option:hover { transform: scale(1.03); }
+        .correct { background-color: #d4edda !important; }
+        .wrong { background-color: #f8d7da !important; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+    <h1 class="text-center mb-4">📚 Vocab Master</h1>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item"><a class="nav-link active" id="flash-tab" data-bs-toggle="tab" href="#flash">Kho Flashcard</a></li>
+        <li class="nav-item"><a class="nav-link" id="quiz-tab" data-bs-toggle="tab" href="#quiz">Kiểm tra (Trắc nghiệm)</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- TAB 1: FLASHCARD -->
+        <div class="tab-pane fade show active" id="flash">
+            <h4 class="text-center mb-4">Chọn Test TOEIC để học</h4>
+            
+            <!-- Danh sách test + progress bar -->
+            <div class="row g-3 mb-5" id="test-list"></div>
+
+            <!-- Phần học flashcard (ẩn ban đầu) -->
+            <div id="flashcard-area" class="d-none">
+                <div class="text-center mb-3">
+                    <button class="btn btn-outline-secondary me-3" onclick="backToTests()">← Quay lại danh sách test</button>
+                    <h5 id="current-test-name" class="d-inline"></h5>
+                    <span id="card-counter" class="ms-3 fw-bold">0 / 0</span>
+                </div>
+
+                <div class="text-center mb-3">
+                    <div class="progress" style="height: 25px;">
+                        <div id="test-progress-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    <small id="progress-text">Đã học: 0 / 0 từ</small>
+                </div>
+
+                <!-- Flashcard giống cũ, nhưng thêm id cho english-word -->
+                <div class="flashcard mx-auto" id="flashcard" onclick="flipCard()">
+                    <div class="flashcard-inner" id="inner">
+                        <div class="flashcard-front" id="front">
+                            <div class="d-flex align-items-center justify-content-center h-100 position-relative">
+                                <span id="english-word"></span>
+                                <button class="btn btn-light btn-lg position-absolute top-0 end-0 m-3 rounded-circle shadow" 
+                                        onclick="speakWord(event)" title="Phát âm">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flashcard-back" id="back">
+                            <h3 id="vietnamese"></h3>
+                            <div class="explanation" id="explanation"></div>
+                            <small class="mt-3">Click thẻ để lật về mặt trước</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-outline-primary me-3" onclick="prevCard()">← Trước</button>
+                    <button class="btn btn-outline-primary ms-3" onclick="nextCard()">Sau →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: QUIZ -->
+        <div class="tab-pane fade" id="quiz">
+            <div class="text-center mb-4">
+                <button class="btn btn-success btn-lg" onclick="startQuiz()">BẮT ĐẦU KIỂM TRA</button>
+                <p class="mt-3" id="score">Điểm: <span id="current-score">0</span>/10</p>
+            </div>
+
+            <div id="quiz-area" class="d-none">
+                <h4 class="text-center" id="question">
+                    <strong id="quiz-english"></strong>
+                    <button class="btn btn-light btn-sm ms-2 rounded-circle" onclick="speakWord(event)" title="Phát âm">
+                        <i class="fas fa-volume-up"></i>
+                    </button><br>Chọn nghĩa đúng
+                </h4>
+                <div id="options" class="row g-3"></div>
+                <button class="btn btn-primary mt-4" onclick="nextQuestion()" id="next-btn" style="display:none">Câu tiếp theo</button>
+            </div>
+
+            <div id="result" class="text-center d-none">
+                <h2>Hoàn thành!</h2>
+                <h3 id="final-score"></h3>
+                <button class="btn btn-success" onclick="restartQuiz()">Làm lại</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const vocabData = {{ vocabulary | safe }};
+const allWords = Object.values(vocabData).flat();
+let currentQuestionIndex = 0;
+let score = 0;
+let answered = false;
+
+// ==================== FLASHCARD ====================
+let currentTest = null;
+let currentIndex = 0;
+let learnedWords = JSON.parse(localStorage.getItem('learnedWords')) || {};  // { "Test 1": [0, 2, 5], ... }
+
+function renderTestList() {
+    const listDiv = document.getElementById('test-list');
+    listDiv.innerHTML = '';
+    Object.keys(vocabData).forEach(testName => {
+        const words = vocabData[testName];
+        const learned = (learnedWords[testName] || []).length;
+        const total = words.length;
+        const percent = total > 0 ? Math.round((learned / total) * 100) : 0;
+
+        const card = document.createElement('div');
+        card.className = 'col-md-6 col-lg-4';
+        card.innerHTML = `
+            <div class="card shadow-sm h-100 cursor-pointer" onclick="startTest('${testName}')">
+                <div class="card-body text-center">
+                    <h5 class="card-title">${testName}</h5>
+                    <p class="card-text">Tổng: ${total} từ</p>
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: ${percent}%;" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100">${percent}%</div>
+                    </div>
+                    <small>Đã học: ${learned}/${total}</small>
+                </div>
+            </div>
+        `;
+        listDiv.appendChild(card);
+    });
+}
+
+function startTest(testName) {
+    currentTest = testName;
+    currentIndex = 0;
+    document.getElementById('test-list').classList.add('d-none');
+    document.getElementById('flashcard-area').classList.remove('d-none');
+    document.getElementById('current-test-name').textContent = testName;
+    showCard();
+    updateProgress();
+}
+
+function backToTests() {
+    currentTest = null;
+    document.getElementById('flashcard-area').classList.add('d-none');
+    document.getElementById('test-list').classList.remove('d-none');
+}
+
+function showCard() {
+    if (!currentTest) return;
+    const words = vocabData[currentTest];
+    if (currentIndex >= words.length) currentIndex = 0;
+    const card = words[currentIndex];
+    document.getElementById('english-word').textContent = card.english;
+    document.getElementById('vietnamese').textContent = card.vietnamese;
+    document.getElementById('explanation').textContent = card.explanation;
+    document.getElementById('card-counter').textContent = `${currentIndex + 1} / ${words.length}`;
+    document.getElementById('flashcard').classList.remove('flipped');
+
+    // Đánh dấu đã học khi xem thẻ
+    if (!learnedWords[currentTest]) learnedWords[currentTest] = [];
+    if (!learnedWords[currentTest].includes(currentIndex)) {
+        learnedWords[currentTest].push(currentIndex);
+        localStorage.setItem('learnedWords', JSON.stringify(learnedWords));
+        updateProgress();
+    }
+}
+
+function updateProgress() {
+    if (!currentTest) return;
+    const learned = (learnedWords[currentTest] || []).length;
+    const total = vocabData[currentTest].length;
+    const percent = total > 0 ? Math.round((learned / total) * 100) : 0;
+    document.getElementById('test-progress-bar').style.width = percent + '%';
+    document.getElementById('test-progress-bar').textContent = percent + '%';
+    document.getElementById('progress-text').textContent = `Đã học: ${learned} / ${total} từ`;
+}
+
+function nextCard() {
+    currentIndex = (currentIndex + 1) % vocabData[currentTest].length;
+    showCard();
+}
+
+function prevCard() {
+    currentIndex = (currentIndex - 1 + vocabData[currentTest].length) % vocabData[currentTest].length;
+    showCard();
+}
+
+
+function flipCard() {
+    document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+// ==================== QUIZ ====================
+function startQuiz() {
+    score = 0;
+    currentQuestionIndex = 0;
+    document.getElementById('quiz-area').classList.remove('d-none');
+    document.getElementById('result').classList.add('d-none');
+    document.getElementById('current-score').textContent = '0';
+    nextQuestion();
+}
+
+function nextQuestion() {
+    if (currentQuestionIndex >= 10) {
+        showResult();
+        return;
+    }
+    answered = false;
+    document.getElementById('next-btn').style.display = 'none';
+
+    const q = allWords[Math.floor(Math.random() * allWords.length)];
+    document.getElementById('quiz-english').textContent = q.english;
+    document.getElementById('question').querySelector('strong').textContent = q.english;
+
+    // Tạo 4 đáp án...
+    let options = [q.vietnamese];
+    while (options.length < 4) {
+        const wrong = allWords[Math.floor(Math.random() * allWords.length)].vietnamese;
+        if (!options.includes(wrong)) options.push(wrong);
+    }
+    options = options.sort(() => Math.random() - 0.5);
+
+    const optDiv = document.getElementById('options');
+    optDiv.innerHTML = '';
+    options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'col-12 btn btn-outline-secondary option py-3 fs-5';
+        btn.textContent = opt;
+        btn.onclick = () => checkAnswer(opt, q.vietnamese, btn);
+        optDiv.appendChild(btn);
+    });
+}
+
+function checkAnswer(selected, correct, btn) {
+    if (answered) return;
+    answered = true;
+
+    const allBtns = document.querySelectorAll('.option');
+    allBtns.forEach(b => {
+        if (b.textContent === correct) b.classList.add('correct');
+        if (b === btn && b.textContent !== correct) b.classList.add('wrong');
+        b.disabled = true;
+    });
+
+    if (selected === correct) {
+        score++;
+        document.getElementById('current-score').textContent = score;
+    }
+
+    document.getElementById('next-btn').style.display = 'block';
+    currentQuestionIndex++;
+}
+
+function showResult() {
+    document.getElementById('quiz-area').classList.add('d-none');
+    document.getElementById('result').classList.remove('d-none');
+    document.getElementById('final-score').innerHTML = `Bạn đạt <strong>${score}/10</strong> điểm!`;
+}
+
+function restartQuiz() {
+    startQuiz();
+}
+function speakWord(e) {
+    e.stopPropagation();  // Ngăn lật thẻ khi click nút loa
+
+    let wordToSpeak = '';
+
+    if (document.getElementById('flashcard').classList.contains('active') || 
+        document.querySelector('#flash-tab').classList.contains('active')) {
+        // Trong tab flashcard
+        wordToSpeak = vocabData[currentTest][currentIndex].english;
+    } else {
+        // Trong tab quiz
+        wordToSpeak = document.getElementById('quiz-english')?.textContent || '';
+    }
+
+    if (!wordToSpeak) return;
+
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(wordToSpeak);
+        utterance.lang = 'en-GB';           // Phát âm kiểu Anh
+        utterance.rate = 0.9;               // Tốc độ hơi chậm để dễ nghe
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        // Chọn giọng tốt nhất nếu có (thường là Google US English hoặc mặc định)
+        const voices = speechSynthesis.getVoices();
+        const enVoice = voices.find(v => v.lang.startsWith('en-') && v.name.includes('Google')) || 
+                        voices.find(v => v.lang === 'en-US');
+        if (enVoice) utterance.voice = enVoice;
+
+        speechSynthesis.speak(utterance);
+    } else {
+        alert("Trình duyệt của bạn không hỗ trợ phát âm tự động. Hãy thử Chrome/Edge mới nhất!");
+    }
+}
+// Khởi tạo
+renderTestList();
+// Khởi tạo
+//showCard();
+</script>
+</body>
+</html>
